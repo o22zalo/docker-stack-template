@@ -1,0 +1,7 @@
+db:
+  - path: ${SQLITE_PATH:-/data/app.db}
+    replicas:
+      - url: s3://${LITESTREAM_BUCKET}/${LITESTREAM_KEY_PREFIX:-sqlite}/app.db
+        region: ${AWS_REGION}
+        access-key-id: ${AWS_ACCESS_KEY_ID}
+        secret-access-key: ${AWS_SECRET_ACCESS_KEY}

@@ -1,25 +1,29 @@
+FROM litestream/litestream:0.5 AS litestream
+
 FROM node:20-alpine
 
-# Tạo user không phải root để bảo mật
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup \
+  && adduser -S appuser -G appgroup \
+  && apk add --no-cache sqlite
 
 WORKDIR /app
 
-# Copy package files trước để tận dụng Docker cache
+COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
+
 COPY package*.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
-# Copy source code
 COPY . .
+COPY litestream.yml /etc/litestream.yml
 
-# Tạo thư mục log và phân quyền
-RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
+RUN mkdir -p /app/logs /data \
+  && chown -R appuser:appgroup /app /data /etc/litestream.yml
 
 USER appuser
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "index.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]

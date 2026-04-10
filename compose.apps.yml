@@ -1,13 +1,14 @@
 # ================================================================
 #  compose.apps.yml — Application Layer
-#  Builds the bundled sample app from ./services/app
+#  Node.js app (OmniRoute) + SQLite + Litestream (S3 replica)
 #
 #  Subdomain: ${PROJECT_NAME}.${DOMAIN}
 #
 #  Minimal required env:
-#    APP_PORT   — Port app listens on inside container
-#    PROJECT_NAME, DOMAIN, CADDY_AUTH_USER, CADDY_AUTH_HASH
-#    TAILSCALE_HTTPS_HOST — internal HTTPS hostname for tailnet access
+#    APP_PORT, PROJECT_NAME, DOMAIN, CADDY_AUTH_USER, CADDY_AUTH_HASH
+#    TAILSCALE_HTTPS_HOST
+#    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+#    LITESTREAM_BUCKET
 # ================================================================
 
 services:
@@ -19,17 +20,22 @@ services:
     environment:
       NODE_ENV: "${NODE_ENV:-production}"
       PORT: "${APP_PORT:-3000}"
+      SQLITE_PATH: "${SQLITE_PATH:-/data/app.db}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_REGION: "${AWS_REGION}"
+      LITESTREAM_BUCKET: "${LITESTREAM_BUCKET}"
+      LITESTREAM_KEY_PREFIX: "${LITESTREAM_KEY_PREFIX:-sqlite}"
     ports:
       - "127.0.0.1:${APP_HOST_PORT:-3000}:${APP_PORT:-3000}"
     volumes:
       - ./logs/app:/app/logs
+      - ./data/sqlite:/data
     labels:
-      # Public HTTP sites behind Cloudflare Tunnel.
       - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
       - "caddy.basic_auth=/*"
       - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
-      # Internal HTTPS site for Tailscale / trusted LAN access.
       - "caddy_1=https://${TAILSCALE_HTTPS_HOST}"
       - "caddy_1.tls=internal"
       - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
@@ -46,4 +52,4 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
