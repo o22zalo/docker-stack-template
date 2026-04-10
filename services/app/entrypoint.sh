@@ -1,21 +1,21 @@
 #!/bin/sh
 set -eu
 
-DB_PATH="${SQLITE_PATH:-/data/app.db}"
+DB_PATH="${SQLITE_PATH:-${DATA_DIR:-/var/lib/omniroute}/omniroute.db}"
 CONFIG_PATH="/etc/litestream.yml"
 
 mkdir -p "$(dirname "$DB_PATH")"
 
-echo "[entrypoint] restoring sqlite from S3 replica..."
+echo "[entrypoint] restoring OmniRoute sqlite from Supabase S3..."
 if ! litestream restore -config "$CONFIG_PATH" "$DB_PATH"; then
-  echo "[entrypoint] ERROR: restore failed or replica does not exist."
+  echo "[entrypoint] ERROR: cannot restore sqlite from replica (missing object or invalid credentials)."
   exit 1
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-  echo "[entrypoint] ERROR: sqlite file not found after restore: $DB_PATH"
+  echo "[entrypoint] ERROR: restored file not found: $DB_PATH"
   exit 1
 fi
 
 echo "[entrypoint] restore completed: $DB_PATH"
-exec litestream replicate -config "$CONFIG_PATH" -exec "node index.js"
+exec litestream replicate -config "$CONFIG_PATH" -exec "node run-standalone.mjs"

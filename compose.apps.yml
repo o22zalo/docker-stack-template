@@ -1,14 +1,6 @@
 # ================================================================
 #  compose.apps.yml — Application Layer
-#  Node.js app (OmniRoute) + SQLite + Litestream (S3 replica)
-#
-#  Subdomain: ${PROJECT_NAME}.${DOMAIN}
-#
-#  Minimal required env:
-#    APP_PORT, PROJECT_NAME, DOMAIN, CADDY_AUTH_USER, CADDY_AUTH_HASH
-#    TAILSCALE_HTTPS_HOST
-#    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
-#    LITESTREAM_BUCKET
+#  OmniRoute + SQLite + Litestream (Supabase S3 compatible)
 # ================================================================
 
 services:
@@ -19,37 +11,43 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: "${NODE_ENV:-production}"
-      PORT: "${APP_PORT:-3000}"
-      SQLITE_PATH: "${SQLITE_PATH:-/data/app.db}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "${AWS_REGION}"
-      LITESTREAM_BUCKET: "${LITESTREAM_BUCKET}"
-      LITESTREAM_KEY_PREFIX: "${LITESTREAM_KEY_PREFIX:-sqlite}"
+      PORT: "${APP_PORT:-20128}"
+      DATA_DIR: "${DATA_DIR:-/app/data}"
+      SQLITE_PATH: "${SQLITE_PATH:-/app/data/omniroute.db}"
+
+      # OmniRoute bootstrap
+      JWT_SECRET: "${JWT_SECRET}"
+      API_KEY_SECRET: "${API_KEY_SECRET}"
+      INITIAL_PASSWORD: "${INITIAL_PASSWORD}"
+      NEXT_PUBLIC_BASE_URL: "${NEXT_PUBLIC_BASE_URL}"
+
+      # Supabase S3 (Litestream)
+      SUPABASE_S3_ENDPOINT: "${SUPABASE_S3_ENDPOINT}"
+      SUPABASE_S3_REGION: "${SUPABASE_S3_REGION:-us-east-1}"
+      SUPABASE_S3_BUCKET: "${SUPABASE_S3_BUCKET}"
+      SUPABASE_S3_PREFIX: "${SUPABASE_S3_PREFIX:-omniroute}"
+      SUPABASE_S3_ACCESS_KEY_ID: "${SUPABASE_S3_ACCESS_KEY_ID}"
+      SUPABASE_S3_SECRET_ACCESS_KEY: "${SUPABASE_S3_SECRET_ACCESS_KEY}"
     ports:
-      - "127.0.0.1:${APP_HOST_PORT:-3000}:${APP_PORT:-3000}"
+      - "127.0.0.1:${APP_HOST_PORT:-20128}:${APP_PORT:-20128}"
     volumes:
       - ./logs/app:/app/logs
-      - ./data/sqlite:/data
+      - ./data/sqlite:/app/data
     labels:
       - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
+      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-20128}}}"
       - "caddy.basic_auth=/*"
       - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
       - "caddy_1=https://${TAILSCALE_HTTPS_HOST}"
       - "caddy_1.tls=internal"
-      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
+      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-20128}}}"
       - "caddy_1.basic_auth=/*"
       - "caddy_1.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
     healthcheck:
-      test:
-        - "CMD"
-        - "sh"
-        - "-c"
-        - "wget -qO- http://localhost:${APP_PORT:-3000}${HEALTH_PATH:-/health} || exit 1"
+      test: ["CMD", "node", "healthcheck.mjs"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 30s
