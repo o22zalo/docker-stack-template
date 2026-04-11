@@ -16,3 +16,7 @@
 - `ENABLE_DOZZLE`: bật/tắt.
 - `DOCKER_SOCK`: đường dẫn socket.
 - `PROJECT_NAME`, `DOMAIN`, `CADDY_AUTH_USER`, `CADDY_AUTH_HASH`.
+
+## Truy cập qua Tailscale
+- URL: `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}`
+- Cổng host: `DOZZLE_HOST_PORT` (default `18080`).

@@ -71,6 +71,9 @@ Nếu `TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true`, bắt buộc thêm:
 - `TAILSCALE_TAGS`: mặc định `tag:container`.
 - `TAILSCALE_KEEP_IP_INTERVAL_SEC`: mặc định `30`.
 - `CUR_WHOAMI`, `CUR_WORK_DIR`, `SHELL`: hỗ trợ webssh Linux thân thiện hơn.
+- `DOZZLE_HOST_PORT` (default `18080`): cổng localhost cho Dozzle.
+- `FILEBROWSER_HOST_PORT` (default `18081`): cổng localhost cho Filebrowser.
+- `WEBSSH_HOST_PORT` (default `17681`): cổng localhost cho WebSSH.
 
 ## 5) Cấu hình Cloudflare Tunnel (chi tiết kỹ thuật)
 
@@ -109,6 +112,18 @@ npm run dockerapp-exec:up
 npm run dockerapp-exec:ps
 npm run dockerapp-exec:logs
 ```
+
+## Truy cập dịch vụ qua Tailscale hostname + port
+
+Khi `ENABLE_TAILSCALE=true`, bạn có thể dùng hostname tailnet của node:
+
+- `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}` → Dozzle
+- `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}` → Filebrowser
+- `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}` → WebSSH
+
+Ghi chú:
+- Các cổng này bind `127.0.0.1` trên host; truy cập qua tailnet phụ thuộc cách bạn chạy Tailscale (container host-network Linux hay host-level trên Windows/WSL).
+- Nếu không truy cập được qua tailnet, kiểm tra firewall host và trạng thái route/Tailscale.
 
 ## 8) Kiểm tra sau deploy
 

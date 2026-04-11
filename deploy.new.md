@@ -83,6 +83,10 @@ npm run dockerapp-exec:logs
 ### Lớp access (nếu bật)
 - Tailnet host nội bộ truy cập được.
 - Keep-ip logs không báo lỗi Firebase/API.
+- Truy cập ops bằng hostname+port qua tailnet:
+  - `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}`
+  - `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}`
+  - `http://${STACK_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}`
 
 ## Tổng kết điểm cần đổi khi thay dịch vụ
 

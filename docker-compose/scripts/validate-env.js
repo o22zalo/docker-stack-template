@@ -115,6 +115,9 @@ checkPort("APP_PORT", true);
 
 // 2) Optional env from compose files
 checkPort("APP_HOST_PORT", false);
+checkPort("DOZZLE_HOST_PORT", false);
+checkPort("FILEBROWSER_HOST_PORT", false);
+checkPort("WEBSSH_HOST_PORT", false);
 checkOptional("NODE_ENV", "app runtime env");
 checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
 checkOptional("DOCKER_SOCK", "docker socket path override");
@@ -202,7 +205,15 @@ ok.push(`subdomain preview: app=${project}.${domain}`);
 if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${project}.${domain}`);
 if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${project}.${domain}`);
 if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${project}.${domain}`);
-if (env.ENABLE_TAILSCALE === "true") ok.push(`tailnet host: https://${stack}.${tailnet}`);
+if (env.ENABLE_TAILSCALE === "true") {
+  const dozzlePort = env.DOZZLE_HOST_PORT || "18080";
+  const filesPort = env.FILEBROWSER_HOST_PORT || "18081";
+  const sshPort = env.WEBSSH_HOST_PORT || "17681";
+  ok.push(`tailnet host: https://${stack}.${tailnet}`);
+  if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${stack}.${tailnet}:${dozzlePort}`);
+  if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${stack}.${tailnet}:${filesPort}`);
+  if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${stack}.${tailnet}:${sshPort}`);
+}
 
 console.log("\n📋 ENV VALIDATION REPORT");
 console.log("─".repeat(60));
